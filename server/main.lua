@@ -1,6 +1,10 @@
 local PlayersWorking = {}
 ESX = nil
 
+local External = {
+	Jobs = {}
+}
+
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local function Work(source, item)
@@ -58,6 +62,21 @@ local function Work(source, item)
 		end
 	end)
 end
+
+RegisterServerEvent('esx_jobs:registerExternalJobs')
+AddEventHandler('esx_jobs:registerExternalJobs', function(jobs)	
+	for jobKey, jobValues in pairs(jobs) do
+		if not External.Jobs[jobKey] then
+			External.Jobs[jobKey] = jobValues
+		else
+			print(jobKey .. ' is already a job on this server')
+		end		
+	end
+end)
+
+ESX.RegisterServerCallback("esx_jobs:getExternalJobs", function(source, cb)
+    cb(External.Jobs)
+end)
 
 RegisterServerEvent('esx_jobs:startWork')
 AddEventHandler('esx_jobs:startWork', function(item)
