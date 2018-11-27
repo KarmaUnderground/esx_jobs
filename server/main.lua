@@ -1,6 +1,19 @@
 local PlayersWorking = {}
 ESX = nil
 
+local External = {
+	Hooks = {
+		overrides = {
+			add_item = {},
+			add_money = {}
+		},
+		callbacks = {
+			add_item = {},
+			add_money = {}
+		}
+	}
+}
+
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local function Work(source, item)
@@ -31,17 +44,24 @@ local function Work(source, item)
 					TriggerClientEvent('esx:showNotification', source, _U('not_enough', item[1].requires_name))
 				else
 					if item[i].name ~= _U('delivery') then
-						-- Chances to drop the item
-						if item[i].drop == 100 then
-							xPlayer.addInventoryItem(item[i].db_name, item[i].add)
-						else
-							local chanceToDrop = math.random(100)
-							if chanceToDrop <= item[i].drop then
+						if not execute_hooks(External.Hooks.overrides.add_item, {xPlayer = xPlayer, item = item[i]}) then					
+							if item[i].drop == 100 then -- Chances to drop the item
 								xPlayer.addInventoryItem(item[i].db_name, item[i].add)
+							else
+								local chanceToDrop = math.random(100)
+								if chanceToDrop <= item[i].drop then
+									xPlayer.addInventoryItem(item[i].db_name, item[i].add)
+								end
 							end
 						end
+
+						execute_hooks(External.Hooks.callbacks.add_item, {xPlayer = xPlayer, item = item[i]})
 					else
-						xPlayer.addMoney(item[i].price)
+						if not execute_hooks(External.Hooks.overrides.add_money, {xPlayer = xPlayer, item = item[i]}) then
+							xPlayer.addMoney(item[i].price)
+						end
+
+						execute_hooks(External.Hooks.callbacks.add_item, {xPlayer = xPlayer, item = item[i]})
 					end
 				end
 			end
@@ -58,6 +78,26 @@ local function Work(source, item)
 		end
 	end)
 end
+
+function execute_hooks(hooks, param)
+	local has_hook = false
+
+	for index, hook in pairs(hooks) do
+		has_hook = true
+		hook(param)
+	end
+
+	return has_hook
+end
+
+RegisterServerEvent('esx_jobs:registerHook')
+AddEventHandler('esx_jobs:registerHook', function(hType, hAction, hFunction)
+	if External.Hooks[hType][hAction] then 
+		table.insert(External.Hooks[hType][hAction], hFunction)
+	else
+		print(hType .. ' ' .. hAction .. ' is not a valid hook')
+	end
+end)
 
 RegisterServerEvent('esx_jobs:startWork')
 AddEventHandler('esx_jobs:startWork', function(item)
