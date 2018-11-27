@@ -2,6 +2,7 @@ local PlayersWorking = {}
 ESX = nil
 
 local External = {
+	Jobs = {},
 	Hooks = {
 		overrides = {
 			add_item = {},
@@ -97,6 +98,21 @@ AddEventHandler('esx_jobs:registerHook', function(hType, hAction, hFunction)
 	else
 		print(hType .. ' ' .. hAction .. ' is not a valid hook')
 	end
+end)
+
+RegisterServerEvent('esx_jobs:registerExternalJobs')
+AddEventHandler('esx_jobs:registerExternalJobs', function(jobs)	
+	for jobKey, jobValues in pairs(jobs) do
+		if not External.Jobs[jobKey] then
+			External.Jobs[jobKey] = jobValues
+		else
+			print(jobKey .. ' is already a job on this server')
+		end		
+	end
+end)
+
+ESX.RegisterServerCallback("esx_jobs:getExternalJobs", function(source, cb)
+    cb(External.Jobs)
 end)
 
 RegisterServerEvent('esx_jobs:startWork')

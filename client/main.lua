@@ -18,6 +18,7 @@ local Blips = {}
 local JobBlips = {}
 local isInMarker = false
 local isInPublicMarker = false
+local isExternalJobsLoaded = false
 
 local hintToDisplay = "no hint to display"
 local onDuty = false
@@ -302,6 +303,23 @@ AddEventHandler('esx_jobs:spawnJobVehicle', function(spawnPoint, vehicle)
 			vehicleMaxHealth = GetVehicleEngineHealth(spawnedVehicle)
 		end
 	end)
+end)
+
+-- Load external registered jobs
+Citizen.CreateThread(function()
+	while not isExternalJobsLoaded do
+		Citizen.Wait(1000)
+
+		ESX.TriggerServerCallback('esx_jobs:getExternalJobs', function(jobs)
+			if not isExternalJobsLoaded then
+				for jobKey, jobValues in pairs(jobs) do
+  					Config.Jobs[jobKey] = jobValues
+				end
+
+				isExternalJobsLoaded = true
+			end
+		end)
+	end
 end)
 
 -- Show top left hint
